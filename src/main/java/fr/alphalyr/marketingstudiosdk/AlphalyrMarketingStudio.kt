@@ -3,7 +3,7 @@ package fr.alphalyr.marketingstudiosdk
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
+import android.content.res.Configuration
 import android.provider.Settings
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -16,25 +16,43 @@ import java.lang.StringBuilder
 import java.net.HttpURLConnection
 import java.net.URL
 
-
 class AlphalyrMarketingStudioSdk {
-    companion object {private var gdprConsent: Boolean = false
-        private var customerId: String = ""
+    companion object {
+        private var gdprConsent: Boolean = false
+        private var customerId: String? = null
         private var universalLinkingUrl: String? = null
+        private var isConfigured: Boolean = false
+        private var deviceId: String? = null
+        private var deviceType: String = "u"
+        private var aid: String? = null
+        private var excludedUniversalLinkingParams: Array<String> = emptyArray()
 
-        private val deviceId: String = ""
-        private val deviceType: String = if (Build.USER.equals("pad", ignoreCase = true)) "t" else if (Build.USER.equals("phone", ignoreCase = true)) "m" else "u"
-        private var aid: String = ""
-        private var blacklistedParams: Array<String> = arrayOf()
-
-        public fun configure(aid: String, blacklistedParams: Array<String>?) {
+        fun configure(aid: String, applicationContext: Context, excludedUniversalLinkingParams: Array<String>?) {
             this.aid = aid
-            if (blacklistedParams != null) {
-                this.blacklistedParams = blacklistedParams
+            excludedUniversalLinkingParams?.let { this.excludedUniversalLinkingParams = it }
+            setDeviceId(applicationContext)
+            setDeviceType(applicationContext)
+            isConfigured = true
+        }
+
+        private fun setDeviceId(applicationContext: Context) {
+            deviceId = Settings.Secure.getString(applicationContext.contentResolver, Settings.Secure.ANDROID_ID)
+        }
+
+        private fun setDeviceType(applicationContext: Context) {
+            val configuration = applicationContext.resources.configuration
+            val isTablet = configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK >= Configuration.SCREENLAYOUT_SIZE_LARGE
+            deviceType = if (isTablet) "t" else "m"
+        }
+
+        private fun checkIfConfigured() {
+            if (!isConfigured) {
+                throw Error("AlphalyrMarketingStudioSDK has not been configured yet")
             }
         }
 
-        public fun onNewIntent(intent: Intent) {
+        fun onNewIntent(intent: Intent) {
+            checkIfConfigured()
             val appLinkData: Uri? = intent.data
             if (appLinkData != null) {
                 universalLinkingUrl = appLinkData.toString()
@@ -42,11 +60,11 @@ class AlphalyrMarketingStudioSdk {
             }
         }
 
-        public fun setGdprConsent(newValue: Boolean) {
+        fun setGdprConsent(newValue: Boolean) {
             gdprConsent = newValue
         }
 
-        public fun setCustomerId(newValue: String) {
+        fun setCustomerId(newValue: String) {
             customerId = newValue
         }
 
@@ -60,6 +78,7 @@ class AlphalyrMarketingStudioSdk {
             discountAmount: Double,
             products: List<Triple<String, Int, Double>>
         ) {
+            checkIfConfigured()
             val transactionQueryParams = "totalPrice=$totalPrice&totalPriceWithTax=$totalPriceWithTax&reference=$reference&new=${if (new) "1" else "0"}&currency=$currency&discountCode=$discountCode&discountAmount=$discountAmount&products=${stringifyProducts(products)}"
 
             val queryParams = listOfNotNull(commonQueryParams(), transactionQueryParams).joinToString("&")
@@ -77,20 +96,21 @@ class AlphalyrMarketingStudioSdk {
                 return null
             }
             val url = URL(universalLinkingUrl)
-            val queryParams = getUniversalLinkingQueryParams()
 
-            return "path=${url.path}&utm_source=${queryParams["utm_source"]}&utm_medium=${queryParams["utm_medium"]}&utm_campaign=${queryParams["utm_campaign"]}&referrer=${queryParams["referrer"]}"
+            return arrayOf("path=${url.path}", getFilteredUniversalLinkingQueryParams()).joinToString("&")
         }
 
-        private fun getUniversalLinkingQueryParams(): Map<String, String> {
+        private fun getFilteredUniversalLinkingQueryParams(): String {
             val components = Uri.parse(universalLinkingUrl.toString())
-            val queryParams: MutableMap<String, String> = mutableMapOf()
+            val queryParams = mutableListOf<String>()
 
             components.queryParameterNames.forEach { name ->
-                queryParams[name] = components.getQueryParameter(name) ?: ""
+                if (name !in excludedUniversalLinkingParams) {
+                    queryParams.add("${name}=${components.getQueryParameter(name) ?: ""}")
+                }
             }
 
-            return queryParams
+            return queryParams.joinToString("&")
         }
 
         private fun commonQueryParams(): String {
@@ -103,14 +123,13 @@ class AlphalyrMarketingStudioSdk {
 
         private fun requestApi(path: String, queryParams: String) {
             GlobalScope.launch(Dispatchers.IO) {
-                val fullUrl =
-                    "https://webhook.site/4bc1a57c-09ab-40fb-b3cd-76b12d7a2f71?$queryParams"
+                val fullUrl = "https://webhook.site/4bc1a57c-09ab-40fb-b3cd-76b12d7a2f71?$queryParams"
                 val url = URL(fullUrl)
 
                 with(url.openConnection() as HttpURLConnection) {
                     requestMethod = "GET"
 
-                    val response = try {
+                    try {
                         BufferedReader(InputStreamReader(inputStream)).use {
                             val responseBuilder = StringBuilder()
                             var inputLine: String?
@@ -121,12 +140,7 @@ class AlphalyrMarketingStudioSdk {
                         }
                     } catch (e: IOException) {
                         // Handle network request failure
-                        ""
-                    }
-
-                    // Handle API response
-                    if (response.isNotEmpty()) {
-                        // Process the response
+                        Log.e("AlphalyrMarketingStudioSDK", e.toString())
                     }
                 }
             }
