@@ -129,7 +129,7 @@ class AlphalyrMarketingStudioSdk {
 
         private fun requestApi(path: String, queryParams: String) {
             GlobalScope.launch(Dispatchers.IO) {
-                val fullUrl = " https://tck.elitrack.com/$path?$queryParams"
+                val fullUrl = "https://tck.elitrack.com/$path?$queryParams"
                 val url = URL(fullUrl)
 
                 with(url.openConnection() as HttpURLConnection) {
