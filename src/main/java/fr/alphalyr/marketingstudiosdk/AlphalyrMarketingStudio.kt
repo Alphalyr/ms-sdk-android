@@ -68,6 +68,12 @@ class AlphalyrMarketingStudioSdk {
             customerId = newValue
         }
 
+        fun trackScreenChange(newScreen: String) {
+            val queryParams = listOfNotNull(commonQueryParams(), "referrer=self&path=$newScreen").joinToString("&")
+
+            requestApi("tag/store", queryParams)
+        }
+
         fun trackTransaction(
             totalPrice: Double,
             totalPriceWithTax: Double,

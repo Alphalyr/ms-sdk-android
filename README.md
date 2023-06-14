@@ -12,7 +12,7 @@ import fr.alphalyr.marketingstudiosdk.AlphalyrMarketingStudioSdk
 
 class MainActivity: AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Configure the SDK 
+        // Configure the SDK
         AlphalyrMarketingStudioSdk.configure(
             "MY_ALPHALYR_AID",
             applicationContext,
@@ -32,24 +32,28 @@ class MainActivity: AppCompatActivity() {
 
 ### Register your customer preferences
 
-```swift
+```kotlin
 AlphalyrMarketingStudioSdk.setCustomerId(customerId: String)
 AlphalyrMarketingStudioSdk.setGdprConsent(consent: Bool)
 ```
 
 ### Track a transaction
 
-```swift
+```kotlin
 AlphalyrMarketingStudioSdk.trackTransaction(
-    totalPrice: Double, 
-    totalPriceWithTax: Double, 
-    reference: String, 
+    totalPrice: Double,
+    totalPriceWithTax: Double,
+    reference: String,
     new: Bool,
     currency: String,
-    discountCode: String?, 
-    discountAmount: Double?, 
+    discountCode: String?,
+    discountAmount: Double?,
     products: List<Triple<String, Int, Double>>
 )
 ```
 
+### Track a screen change
 
+```kotlin
+AlphalyrMarketingStudioSdk.trackScreenChange("ScreenPath")
+```
