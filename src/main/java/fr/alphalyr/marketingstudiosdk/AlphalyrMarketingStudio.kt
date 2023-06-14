@@ -123,7 +123,7 @@ class AlphalyrMarketingStudioSdk {
 
         private fun requestApi(path: String, queryParams: String) {
             GlobalScope.launch(Dispatchers.IO) {
-                val fullUrl = "https://webhook.site/4bc1a57c-09ab-40fb-b3cd-76b12d7a2f71?$queryParams"
+                val fullUrl = " https://tck.elitrack.com/$path?$queryParams"
                 val url = URL(fullUrl)
 
                 with(url.openConnection() as HttpURLConnection) {
