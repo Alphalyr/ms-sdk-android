@@ -1,4 +1,4 @@
-# Alphalyr Marketing Studio Swift SDK
+# Alphalyr Marketing Studio Kotlin SDK
 
 ## Getting started
 
