@@ -2,6 +2,9 @@
 
 ## Getting started
 
+### Pre-requisites
+This SDK relies on Universal Links. You may refer to this [guide](https://developer.android.com/training/app-links/deep-linking) to setup your mobile app with a domain name.
+
 ### Install the SDK
 
 ### Initialize the SDK in your app
@@ -33,7 +36,7 @@ class MainActivity: AppCompatActivity() {
 ### Register your customer preferences
 
 ```kotlin
-AlphalyrMarketingStudioSdk.setCustomerId(customerId: String)
+AlphalyrMarketingStudioSdk.setCustomerId(customerId: String) // usually SHA256 of email address
 AlphalyrMarketingStudioSdk.setGdprConsent(consent: Bool)
 ```
 
@@ -41,19 +44,13 @@ AlphalyrMarketingStudioSdk.setGdprConsent(consent: Bool)
 
 ```kotlin
 AlphalyrMarketingStudioSdk.trackTransaction(
-    totalPrice: Double,
-    totalPriceWithTax: Double,
-    reference: String,
-    new: Bool,
-    currency: String,
-    discountCode: String?,
+    totalPrice: Double, // amount without taxes, without shipping costs 
+    totalPriceWithTax: Double, // amount with taxes included
+    reference: String, // order id
+    new: Bool, // true if new customer, false if returning customer
+    currency: String, // currency ISO-4217 code (i.e: EUR)
+    discountCode: String?, // coupon code
     discountAmount: Double?,
     products: List<Triple<String, Int, Double>>
 )
-```
-
-### Track a screen change
-
-```kotlin
-AlphalyrMarketingStudioSdk.trackScreenChange("ScreenPath")
 ```
